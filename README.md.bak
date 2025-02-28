@@ -1,0 +1,239 @@
+# 市场预警系统
+
+一个基于 Vue 3 和 WebSocket 的实时市场预警系统，用于监控加密货币市场的价格、交易量等指标变化，并提供实时预警。
+
+## 1. 技术架构
+
+### 1.1 前端技术栈
+- **Vue 3** (Composition API)
+  - 使用 `<script setup>` 语法
+  - 响应式系统 (`ref`, `computed`, `watch`)
+  - 组件化开发
+- **Element Plus** UI 框架
+  - 自定义主题
+  - 响应式布局
+- **Pinia** 状态管理
+  - 模块化存储
+  - 实时数据同步
+- **ECharts** 图表库
+  - K线图
+  - 成交量图表
+  - 深度图
+- **WebSocket** 实时通信
+  - 自动重连机制
+  - 心跳检测
+  - 错误处理
+
+### 1.2 后端技术栈
+- **Python** + **FastAPI**
+  - 异步处理
+  - WebSocket 支持
+  - 数据验证
+- **SQLite** 数据存储
+  - 市场数据
+  - 期权数据
+  - 预警记录
+- **Streamlit** 数据可视化
+  - 实时监控面板
+  - 数据分析图表
+
+### 1.3 系统架构
+```
+market-monitor/
+├── frontend/          # Vue 3 前端
+├── backend/           # Python 后端
+│   ├── api/          # REST API
+│   ├── ws/           # WebSocket
+│   └── monitors/     # 监控模块
+└── database/         # 数据存储
+```
+
+## 2. 核心功能模块
+
+### 2.1 市场监控
+- 实时价格监控
+- 交易量分析
+- 深度图分析
+- 技术指标计算
+- 异常波动检测
+
+### 2.2 期权监控
+- 期权链分析
+- 隐含波动率跟踪
+- 希腊字母监控
+- 期权异常信号
+
+### 2.3 预警系统
+- 价格预警
+- 交易量预警
+- 波动率预警
+- 自定义预警条件
+
+### 2.4 数据分析
+- 历史数据分析
+- 趋势识别
+- 相关性分析
+- 风险评估
+
+### 2.5 可视化
+- 实时K线图
+- 成交量分布
+- 预警统计
+- 性能监控
+
+## 3. 详细实现
+
+### 3.1 前端实现
+```javascript
+// WebSocket 连接管理
+export function useWebSocket(url, options = {}) {
+  const {
+    reconnectInterval = 3000,
+    maxReconnectAttempts = 5,
+    heartbeatInterval = 30000
+  } = options;
+  
+  // WebSocket 状态管理
+  const state = ref(WebSocketState.CLOSED);
+  const isConnected = ref(false);
+  
+  // 重连机制
+  const reconnect = async () => {
+    if (reconnectAttempts.value >= maxReconnectAttempts) {
+      return false;
+    }
+    await new Promise(resolve => setTimeout(resolve, reconnectInterval));
+    return connect();
+  };
+  
+  // 心跳检测
+  const startHeartbeat = () => {
+    heartbeatTimer.value = setInterval(() => {
+      if (ws.value?.readyState === WebSocket.OPEN) {
+        ws.value.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, heartbeatInterval);
+  };
+}
+```
+
+### 3.2 后端实现
+```python
+class MarketMonitor(BaseMonitor):
+    def __init__(self):
+        self.exchange = ccxt.binance({
+            'enableRateLimit': True,
+            'options': {
+                'defaultType': 'spot'
+            }
+        })
+        
+    async def monitor_market(self):
+        """市场监控主循环"""
+        while True:
+            try:
+                # 获取市场数据
+                market_data = await self.fetch_market_data()
+                
+                # 分析异常
+                alerts = self.analyze_anomalies(market_data)
+                
+                # 发送预警
+                if alerts:
+                    await self.send_alerts(alerts)
+                    
+            except Exception as e:
+                logger.error(f"市场监控错误: {str(e)}")
+                
+            await asyncio.sleep(self.update_interval)
+```
+
+### 3.3 数据库设计
+```sql
+-- 市场数据表
+CREATE TABLE market_data (
+    id INTEGER PRIMARY KEY,
+    symbol TEXT NOT NULL,
+    price REAL NOT NULL,
+    volume REAL NOT NULL,
+    timestamp DATETIME NOT NULL
+);
+
+-- 预警记录表
+CREATE TABLE alerts (
+    id INTEGER PRIMARY KEY,
+    type TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    message TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    created_at DATETIME NOT NULL
+);
+```
+
+## 4. 部署说明
+
+### 4.1 环境要求
+- Node.js >= 16
+- Python >= 3.8
+- SQLite3
+
+### 4.2 安装步骤
+```bash
+# 前端安装
+cd frontend
+npm install
+npm run build
+
+# 后端安装
+pip install -r requirements.txt
+
+# 启动服务
+python run.py
+```
+
+### 4.3 配置说明
+```python
+# config.py
+API_CONFIG = {
+    'BASE_URL': 'http://localhost:5000',
+    'WS_URL': 'ws://localhost:5000/ws',
+    'UPDATE_INTERVAL': 30,  # 秒
+    'RECONNECT_INTERVAL': 3000,  # 毫秒
+    'MAX_RECONNECT_ATTEMPTS': 5
+}
+```
+
+## 5. 开发指南
+
+### 5.1 添加新监控指标
+1. 在 `monitors` 目录下创建新的监控类
+2. 实现数据获取和分析逻辑
+3. 注册到监控系统
+4. 添加相应的前端组件
+
+### 5.2 自定义预警规则
+1. 在 `alerts.py` 中定义新的预警类型
+2. 实现预警条件判断逻辑
+3. 添加预警处理器
+4. 更新前端预警显示
+
+### 5.3 扩展数据源
+1. 实现新的数据源适配器
+2. 添加数据转换逻辑
+3. 注册到数据管理系统
+4. 更新配置文件
+
+### 5.4 性能优化
+- 使用数据缓存
+- 实现数据批处理
+- 优化数据库查询
+- 添加负载均衡
+
+### 5.5 测试
+```python
+def test_market_monitor():
+    monitor = MarketMonitor()
+    data = monitor.get_market_data()
+    assert len(data) > 0
+    assert all(required_fields in item for item in data)
+```
